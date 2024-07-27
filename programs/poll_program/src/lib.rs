@@ -5,17 +5,30 @@ declare_id!("9ukqpC44ttCKHvbMtVSVJ169fFGL28eWKmDSe8v7dytP");
 pub mod poll_program {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, _name: String, options: u8, description: String) -> Result<()> {
+    pub fn initialize(
+        ctx: Context<Initialize>,
+        _name: String,
+        options: u8,
+        start: i64,
+        end: i64,
+        description: String,
+    ) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        if now > ctx.accounts.poll.end || ctx.accounts.poll.end < ctx.accounts.poll.start {
+            return Err(PollError::InvalidDates.into());
+        }
         ctx.accounts.poll.set_inner(Poll {
             authority: *ctx.accounts.signer.key,
             options,
+            start,
+            end,
             description,
             bump: ctx.accounts.poll.bump,
         });
         Ok(())
     }
 
-    pub fn add_option(ctx: Context<AddOption>, _option: u8, description: String,) -> Result<()> {
+    pub fn add_option(ctx: Context<AddOption>, _option: u8, description: String) -> Result<()> {
         ctx.accounts.option_pda.set_inner(VoteOption {
             count: 0,
             description,
@@ -24,7 +37,11 @@ pub mod poll_program {
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, _vote:u8) -> Result<()> {
+    pub fn vote(ctx: Context<Vote>, _vote: u8) -> Result<()> {
+        let now = Clock::get()?.unix_timestamp;
+        if now < ctx.accounts.poll.start || now > ctx.accounts.poll.end {
+            return Err(PollError::EventClose.into());
+        }
         ctx.accounts.option_pda.count = ctx.accounts.option_pda.count.checked_add(1).unwrap();
         emit!(VoteEvent {
             vote_option: ctx.accounts.option_pda.clone().into_inner()
@@ -78,6 +95,8 @@ pub struct AddOption<'info> {
 pub struct Poll {
     pub authority: Pubkey,
     pub options: u8,
+    pub start: i64,
+    pub end: i64,
     pub bump: u8,
     pub description: String,
 }
@@ -106,4 +125,12 @@ pub struct Lock {
 #[event]
 pub struct VoteEvent {
     pub vote_option: VoteOption,
+}
+
+#[error_code]
+pub enum PollError {
+    #[msg("The Event is not open.")]
+    EventClose,
+    #[msg("The Dates are invalid.")]
+    InvalidDates,
 }
