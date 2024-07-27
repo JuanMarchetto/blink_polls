@@ -5,7 +5,7 @@ declare_id!("9ukqpC44ttCKHvbMtVSVJ169fFGL28eWKmDSe8v7dytP");
 pub mod poll_program {
     use super::*;
 
-    pub fn initialize(
+    pub fn create_poll(
         ctx: Context<Initialize>,
         _name: String,
         options: u8,
