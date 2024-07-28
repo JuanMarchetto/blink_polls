@@ -32,7 +32,7 @@ pub mod poll_program {
         ctx.accounts.option_pda.set_inner(VoteOption {
             count: 0,
             description,
-            bump: ctx.accounts.option_pda.bump,
+            bump: ctx.bumps.option_pda,
         });
         Ok(())
     }
