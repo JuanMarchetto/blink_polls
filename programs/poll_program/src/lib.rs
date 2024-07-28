@@ -37,7 +37,7 @@ pub mod poll_program {
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, _vote: u8) -> Result<()> {
+    pub fn cast_vote(ctx: Context<Vote>, _cast: u8) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         if now < ctx.accounts.poll.start || now > ctx.accounts.poll.end {
             return Err(PollError::EventClose.into());
@@ -61,11 +61,11 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(_vote: u8)]
+#[instruction(_cast: u8)]
 pub struct Vote<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-    #[account(mut, seeds = [b"option", poll.key().as_ref(), &[_vote]], bump = option_pda.bump)]
+    #[account(mut, seeds = [b"option", poll.key().as_ref(), &[_cast]], bump = option_pda.bump)]
     pub option_pda: Account<'info, VoteOption>,
     #[account(
         init,
