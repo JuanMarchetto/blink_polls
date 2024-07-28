@@ -29,10 +29,10 @@ pub mod poll_program {
     }
 
     pub fn add_option(ctx: Context<AddOption>, _option_number: u8, description: String) -> Result<()> {
-        ctx.accounts.option_pda.set_inner(VoteOption {
+        ctx.accounts.option.set_inner(VoteOption {
             count: 0,
             description,
-            bump: ctx.bumps.option_pda,
+            bump: ctx.bumps.option,
         });
         Ok(())
     }
@@ -42,9 +42,9 @@ pub mod poll_program {
         if now < ctx.accounts.poll.start || now > ctx.accounts.poll.end {
             return Err(PollError::EventClose.into());
         }
-        ctx.accounts.option_pda.count = ctx.accounts.option_pda.count.checked_add(1).unwrap();
+        ctx.accounts.option.count = ctx.accounts.option.count.checked_add(1).unwrap();
         emit!(VoteEvent {
-            vote_option: ctx.accounts.option_pda.clone().into_inner()
+            vote_option: ctx.accounts.option.clone().into_inner()
         });
         Ok(())
     }
@@ -67,7 +67,7 @@ pub struct AddOption<'info> {
     pub signer: Signer<'info>,
     pub poll: Account<'info, Poll>,
     #[account(init, seeds = [b"option", poll.key().as_ref(), &[_option_number]], payer = signer, bump, space = VoteOption::LEN)]
-    pub option_pda: Account<'info, VoteOption>,
+    pub option: Account<'info, VoteOption>,
     pub system_program: Program<'info, System>,
 }
 
@@ -76,8 +76,8 @@ pub struct AddOption<'info> {
 pub struct CastVote<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-    #[account(mut, seeds = [b"option", poll.key().as_ref(), &[_cast]], bump = option_pda.bump)]
-    pub option_pda: Account<'info, VoteOption>,
+    #[account(mut, seeds = [b"option", poll.key().as_ref(), &[_cast]], bump = option.bump)]
+    pub option: Account<'info, VoteOption>,
     #[account(
         init,
         payer = signer,
