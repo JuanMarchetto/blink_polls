@@ -6,7 +6,7 @@ pub mod poll_program {
     use super::*;
 
     pub fn create_poll(
-        ctx: Context<Initialize>,
+        ctx: Context<CreatePoll>,
         _name: String,
         options: u8,
         start: i64,
@@ -18,17 +18,17 @@ pub mod poll_program {
             return Err(PollError::InvalidDates.into());
         }
         ctx.accounts.poll.set_inner(Poll {
-            authority: *ctx.accounts.signer.key,
             options,
             start,
             end,
-            description,
+            authority: *ctx.accounts.signer.key,
             bump: ctx.accounts.poll.bump,
+            description,
         });
         Ok(())
     }
 
-    pub fn add_option(ctx: Context<AddOption>, _opt: u8, description: String) -> Result<()> {
+    pub fn add_option(ctx: Context<AddOption>, _option_number: u8, description: String) -> Result<()> {
         ctx.accounts.option_pda.set_inner(VoteOption {
             count: 0,
             description,
@@ -37,7 +37,7 @@ pub mod poll_program {
         Ok(())
     }
 
-    pub fn cast_vote(ctx: Context<Vote>, _cast: u8) -> Result<()> {
+    pub fn cast_vote(ctx: Context<CastVote>, _cast: u8) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
         if now < ctx.accounts.poll.start || now > ctx.accounts.poll.end {
             return Err(PollError::EventClose.into());
@@ -52,7 +52,7 @@ pub mod poll_program {
 
 #[derive(Accounts)]
 #[instruction(_name: String)]
-pub struct Initialize<'info> {
+pub struct CreatePoll<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(init, seeds = [b"poll", _name.as_bytes()], payer = signer, bump, space = Poll::LEN)]
@@ -61,8 +61,19 @@ pub struct Initialize<'info> {
 }
 
 #[derive(Accounts)]
+#[instruction( _option_number: u8)]
+pub struct AddOption<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    pub poll: Account<'info, Poll>,
+    #[account(init, seeds = [b"option", poll.key().as_ref(), &[_option_number]], payer = signer, bump, space = VoteOption::LEN)]
+    pub option_pda: Account<'info, VoteOption>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
 #[instruction(_cast: u8)]
-pub struct Vote<'info> {
+pub struct CastVote<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     #[account(mut, seeds = [b"option", poll.key().as_ref(), &[_cast]], bump = option_pda.bump)]
@@ -80,23 +91,12 @@ pub struct Vote<'info> {
     pub system_program: Program<'info, System>,
 }
 
-#[derive(Accounts)]
-#[instruction( _opt: u8)]
-pub struct AddOption<'info> {
-    #[account(mut)]
-    pub signer: Signer<'info>,
-    pub poll: Account<'info, Poll>,
-    #[account(init, seeds = [b"option", poll.key().as_ref(), &[_opt]], payer = signer, bump, space = VoteOption::LEN)]
-    pub option_pda: Account<'info, VoteOption>,
-    pub system_program: Program<'info, System>,
-}
-
 #[account]
 pub struct Poll {
-    pub authority: Pubkey,
     pub options: u8,
     pub start: i64,
     pub end: i64,
+    pub authority: Pubkey,
     pub bump: u8,
     pub description: String,
 }
