@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-declare_id!("9ukqpC44ttCKHvbMtVSVJ169fFGL28eWKmDSe8v7dytP");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod poll_program {
@@ -14,7 +14,7 @@ pub mod poll_program {
         description: String,
     ) -> Result<()> {
         let now = Clock::get()?.unix_timestamp;
-        if now > ctx.accounts.poll.end || ctx.accounts.poll.end < ctx.accounts.poll.start {
+        if now > end || end < start {
             return Err(PollError::InvalidDates.into());
         }
         ctx.accounts.poll.set_inner(Poll {
@@ -28,7 +28,7 @@ pub mod poll_program {
         Ok(())
     }
 
-    pub fn add_option(ctx: Context<AddOption>, _option: u8, description: String) -> Result<()> {
+    pub fn add_option(ctx: Context<AddOption>, _opt: u8, description: String) -> Result<()> {
         ctx.accounts.option_pda.set_inner(VoteOption {
             count: 0,
             description,
@@ -81,12 +81,12 @@ pub struct Vote<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction( _option: u8)]
+#[instruction( _opt: u8)]
 pub struct AddOption<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     pub poll: Account<'info, Poll>,
-    #[account(init, seeds = [b"option", poll.key().as_ref(), &[_option]], payer = signer, bump, space = VoteOption::LEN)]
+    #[account(init, seeds = [b"option", poll.key().as_ref(), &[_opt]], payer = signer, bump, space = VoteOption::LEN)]
     pub option_pda: Account<'info, VoteOption>,
     pub system_program: Program<'info, System>,
 }

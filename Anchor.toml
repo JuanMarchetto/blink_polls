@@ -4,7 +4,7 @@ skip-lint = false
 [programs.localnet]
 poll_program = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
 [programs.devnet]
-poll_program = "9ukqpC44ttCKHvbMtVSVJ169fFGL28eWKmDSe8v7dytP"
+poll_program = "84Bjj6ke4vuxZV5uRroj6XhwSse83i732Bd9ksBhb1kx"
 
 [registry]
 url = "https://api.apr.dev"
